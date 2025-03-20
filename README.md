@@ -1,5 +1,5 @@
 
-# PowerPoint Image Generation and Text-to-Speech Script
+# PowerPoint Image Generation and Text-to-Speech Script (Create "Powerpoint-Video")
 
 ## Download the Siri Shortcut for removing background from images
 Download the Siri shortcut for removing background from images. Run it manually the first time to accept permissions. 
