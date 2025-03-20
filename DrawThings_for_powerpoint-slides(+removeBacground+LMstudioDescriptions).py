@@ -18,47 +18,54 @@ DRAW_THINGS_URL = "http://127.0.0.1:7860/sdapi/v1/img2img"
 # Image generation settings
 STEPS = 4  # Set to 4 as requested
 REMOVE_BACKGROUND_SHORTCUT = "RemoveBackground"
+print("Get RemoveBacground shortcut here: https://www.icloud.com/shortcuts/2c1e6bc659c748a494b06f7644987972 ")
 
 # Function to extract text from slides
 def extract_text_from_pptx(pptx_path):
     presentation = Presentation(pptx_path)
     slides_text = []
-    
+
+    downloads_folder = os.path.expanduser("~/Downloads")  # Define downloads folder
+    text_file_path = os.path.join(downloads_folder, 'plain_text.txt')
+    audio_file_path = os.path.join(downloads_folder, 'audio_output.aiff')
+
     for slide in presentation.slides:
         slide_text = []
+
         for shape in slide.shapes:
             if hasattr(shape, "text"):
                 slide_text.append(shape.text.strip())
-        slides_text.append("\n".join(slide_text))
 
-        # Define the subtitleForTTS variable as the slide text
-        subtitleForTTS = "\n".join(slide_text)  # Combine all the text on the slide into one string
+        slide_text_combined = "\n".join(slide_text)
+        slides_text.append(slide_text_combined)
 
-        # Define the file paths in the Downloads folder
-        downloads_folder = os.path.expanduser("~/Downloads")
-        text_file_path = os.path.join(downloads_folder, 'plain_text.txt')
-        audio_file_path = os.path.join(downloads_folder, 'audio_output.aiff')
+        try:
+            # Save text to file
+            with open(text_file_path, 'w', encoding='utf-8') as text_file:
+                text_file.write(slide_text_combined)
 
-        # Save the plain text to a .txt file
-        with open(text_file_path, 'w', encoding='utf-8') as text_file:
-            text_file.write(subtitleForTTS)
+            # Generate audio file using macOS 'say' command
+            result = os.system(f"say -v Henrik -f {text_file_path} -o {audio_file_path}")
+            if result != 0:
+                print("Error generating audio file. Skipping audio embedding.")
 
-        # Use macOS 'say' command to generate an audio file from the text file
-        os.system(f"say -v Henrik -f {text_file_path} -o {audio_file_path}")
+            # Try to add the audio file
+            try:
+                slide.shapes.add_movie(
+                    audio_file_path,
+                    left=Inches(4.17),
+                    top=Inches(6.74),
+                    width=Inches(1.67),
+                    height=Inches(0.76),
+                    poster_frame_image=None,
+                    mime_type='audio/aiff'
+                )
+            except Exception as e:
+                print(f"Error embedding audio on slide: {e}")
 
-        # Add the audio file (embedding audio)
-        audio_shape = slide.shapes.add_movie(
-            audio_file_path,
-            left=Inches(4.17),
-            top=Inches(6.74),
-            width=Inches(1.67),
-            height=Inches(0.76),
-            poster_frame_image=None,
-            mime_type='audio/aiff'  # Adjust mime type based on the audio file format
-        )
-    
-    
-    
+        except Exception as e:
+            print(f"Error processing slide text: {e}")
+
     return presentation, slides_text
 
 # Function to get an image description from LM Studio
